@@ -31,7 +31,7 @@
 			enabled: true,
 			handles: ['s', 'e', 'n', 'w', 'se', 'ne', 'sw', 'nw']
 		},
-		containment: true,
+        containment: true,
 		draggable: { // options to pass to draggable handler
 			enabled: true,
 			scrollSensitivity: 20, // Distance in pixels from the edge of the viewport after which the viewport should scroll, relative to pointer
@@ -1078,7 +1078,11 @@
 		 * @param {number} row
 		 * @param {number} column
 		 */
-		this.setPosition = function(row, column) {
+		this.setPosition = function (row, column) {
+		    if (this.gridster === null) {
+		        return;
+		    };
+
 			this.gridster.putItem(this, row, column);
 
 			if (!this.isMoving()) {
@@ -1305,21 +1309,76 @@
 
 					var dX = diffX,
 						dY = diffY;
-					if (elmX + dX < minLeft) {
-						diffX = minLeft - elmX;
-						mOffX = dX - diffX;
-					} else if (elmX + elmW + dX > maxLeft) {
-						diffX = maxLeft - elmX - elmW;
-						mOffX = dX - diffX;
+
+					if (gridster.containment) {
+
+					    if (elmX + dX < minLeft) {
+					        diffX = minLeft - elmX;
+					        mOffX = dX - diffX;
+					    } else if (elmX + elmW + dX > maxLeft) {
+					        diffX = maxLeft - elmX - elmW;
+					        mOffX = dX - diffX;
+					    }
+
+					    if (elmY + dY < minTop) {
+					        diffY = minTop - elmY;
+					        mOffY = dY - diffY;
+					    } else if (elmY + elmH + dY > maxTop) {
+					        diffY = maxTop - elmY - elmH;
+					        mOffY = dY - diffY;
+					    }
+
+					    $el.css({
+					        'opacity': 1
+					    });
+
+					} else {
+
+					    var _x = 0;
+					    var _y = 0;
+
+					    if (elmX  + dX < minLeft) {
+					        _x = minLeft - elmX;
+					    } else if (elmX + elmW + dX > maxLeft) {
+					        _x = maxLeft - elmX - elmW;
+					    }
+					    if (elmY + dY < minTop) {
+					        _y = minTop - elmY;
+					    } else if(elmY + elmH + dY > maxTop ){
+					        _y = maxTop - elmY - elmH;
+					    }
+
+                        //strength
+					    _x = Math.abs(_x*0.4);
+					    _y = Math.abs(_y*1.2);
+
+					    var opacityX = (1 - (_x * 0.01));
+					    var opacityY = (1 - (_y * 0.01));
+					 
+                        //pick lowest.
+					    var opacity = opacityX < opacityY ? opacityX : opacityY;
+
+					    $el.css({
+					        'opacity': opacity
+					    });
+					
+					    if (opacity < 0.1) {
+                            
+					        var hasOutOfBound = gridster.draggable && gridster.draggable.outofbound;
+
+					        if (hasOutOfBound) {
+					            !$el.removeClass('gridster-item-moving');
+
+					            gridster.draggable.outofbound($el.context.id);
+					            gridster.removeItem(item);
+					            return true;
+					        }
+
+
+                        }
+					    
 					}
 
-					if (elmY + dY < minTop) {
-						diffY = minTop - elmY;
-						mOffY = dY - diffY;
-					} else if (elmY + elmH + dY > maxTop) {
-						diffY = maxTop - elmY - elmH;
-						mOffY = dY - diffY;
-					}
 					elmX += diffX;
 					elmY += diffY;
 
@@ -1336,10 +1395,17 @@
 
 				function mouseUp(e) {
 					if (!$el.hasClass('gridster-item-moving') || $el.hasClass('gridster-item-resizing')) {
-						return false;
+						return true;
 					}
 
 					mOffX = mOffY = 0;
+
+					if ($el.css('opacity') < 1) {
+					    $el.css({
+					        'opacity': 1
+					    });
+
+					}
 
 					dragStop(e);
 
@@ -1362,6 +1428,7 @@
 					var oldRow = item.row,
 						oldCol = item.col,
 						hasCallback = gridster.draggable && gridster.draggable.drag,
+                        hasOutOfBound = gridster.draggable && gridster.draggable.outofbound,
 						scrollSensitivity = gridster.draggable.scrollSensitivity,
 						scrollSpeed = gridster.draggable.scrollSpeed;
 
@@ -1949,6 +2016,11 @@
 					scope.$on('gridster-resized', function() {
 						resizable.toggle(!gridster.isMobile && gridster.resizable && gridster.resizable.enabled);
 					});
+
+					scope.$on('gridster-draggable-out-of-bounds', function () {
+					    
+					});
+
 					scope.$watch(function() {
 						return gridster.isMobile;
 					}, function() {
