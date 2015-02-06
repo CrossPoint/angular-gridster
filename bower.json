@@ -1,5 +1,5 @@
 {
-	"name": "angular-gridster",
+	"name": "angular-gridster-tweaks",
 	"version": "0.11.7",
 	"main": ["src/angular-gridster.js", "dist/angular-gridster.min.css"],
 	"dependencies": {
